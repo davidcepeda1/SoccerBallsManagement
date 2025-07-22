@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Soccer Balls CRUD</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 32px;
+        }
+        h1 {
+            text-align: center;
+            color: #2d6cdf;
+            margin-bottom: 24px;
+        }
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 32px;
+            justify-content: center;
+        }
+        form label {
+            flex: 1 1 200px;
+            display: flex;
+            flex-direction: column;
+            font-weight: 500;
+            color: #333;
+        }
+        form input {
+            padding: 8px;
+            border: 1px solid #bcd0ee;
+            border-radius: 6px;
+            margin-top: 4px;
+            font-size: 1em;
+        }
+        form button {
+            background: #2d6cdf;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 24px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: background 0.2s;
+        }
+        form button:hover {
+            background: #1b4fa0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        th, td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e3eafc;
+            text-align: center;
+        }
+        th {
+            background: #f5f8ff;
+            color: #2d6cdf;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .actions button {
+            background: #f5f8ff;
+            border: 1px solid #bcd0ee;
+            color: #2d6cdf;
+            border-radius: 4px;
+            padding: 4px 12px;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .actions button:hover {
+            background: #e0eafc;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 12px;
+            }
+            form {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Soccer Balls</h1>
+        <form id="ballForm">
+            <input type="hidden" id="ballId">
+            <label>Brand: <input type="text" id="brand" required></label>
+            <label>Material: <input type="text" id="material" required></label>
+            <label>Size: <input type="number" id="size" required></label>
+            <label>Base Price: <input type="number" id="basePrice" required></label>
+            <button type="button" id="calcBtn">Calculate Final Price</button>
+            <span id="finalPrice" style="font-weight:bold; color:#2d6cdf; margin-left:16px;"></span>
+            <button type="submit">Save</button>
+        </form>
+        <h2 style="color:#2d6cdf;">List</h2>
+        <table id="ballsTable">
+            <thead>
+                <tr>
+                    <th>Brand</th>
+                    <th>Material</th>
+                    <th>Size</th>
+                    <th>Base Price</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <script>
+        async function fetchBalls() {
+            const res = await fetch('/api/balls');
+            const balls = await res.json();
+            const tbody = document.querySelector('#ballsTable tbody');
+            tbody.innerHTML = '';
+            balls.forEach(ball => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${ball.brand}</td>
+                    <td>${ball.material}</td>
+                    <td>${ball.size}</td>
+                    <td>$${ball.basePrice.toFixed(2)}</td>
+                    <td class="actions">
+                        <button onclick="editBall(${ball.id})">Edit</button>
+                        <button onclick="deleteBall(${ball.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        document.getElementById('ballForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('ballId').value;
+            const ball = {
+                brand: document.getElementById('brand').value,
+                material: document.getElementById('material').value,
+                size: Number(document.getElementById('size').value),
+                basePrice: Number(document.getElementById('basePrice').value)
+            };
+            if (id) {
+                await fetch(`/api/balls/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ball)
+                });
+            } else {
+                await fetch('/api/balls', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ball)
+                });
+            }
+            this.reset();
+            fetchBalls();
+        };
+
+        window.editBall = async function(id) {
+            const res = await fetch(`/api/balls/${id}`);
+            const ball = await res.json();
+            document.getElementById('ballId').value = ball.id;
+            document.getElementById('brand').value = ball.brand;
+            document.getElementById('material').value = ball.material;
+            document.getElementById('size').value = ball.size;
+            document.getElementById('basePrice').value = ball.basePrice;
+        };
+
+        window.deleteBall = async function(id) {
+            await fetch(`/api/balls/${id}`, { method: 'DELETE' });
+            fetchBalls();
+        };
+
+        document.getElementById('calcBtn').onclick = function() {
+            const material = document.getElementById('material').value;
+            const size = Number(document.getElementById('size').value);
+            const basePrice = Number(document.getElementById('basePrice').value);
+
+            let multiplier = 1;
+            if (material.toLowerCase() === 'leather') multiplier += 0.5;
+            if (size >= 5) multiplier += 0.2;
+            const finalPrice = basePrice * multiplier;
+            const finalPriceIVA = finalPrice * 1.12; // Add 12% VAT
+
+            document.getElementById('finalPrice').textContent =
+                isNaN(finalPriceIVA) ? '' : `Final Price + IVA: $${finalPriceIVA.toFixed(2)}`;
+        };
+
+        fetchBalls();
+    </script>
+</body>
