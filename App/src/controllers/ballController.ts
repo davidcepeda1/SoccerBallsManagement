@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { Ball } from "../models/ball"
-
+import { Ball } from '../models/Ball';
 let balls: Ball[] = [];
 let currentId = 1;
 
