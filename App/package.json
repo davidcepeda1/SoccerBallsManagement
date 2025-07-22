@@ -4,8 +4,9 @@
   "description": "API for searching universities by country",
   "main": "src/app.ts",
   "scripts": {
-    "start": "ts-node src/app.ts",
+    "start": "npm run start",
     "build": "tsc",
+    "dev": "ts-node src/app.ts",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
